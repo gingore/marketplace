@@ -8,23 +8,49 @@
 ```bash
 curl http://localhost:3000/api/test-connection
 ```
-If `columnTest.success` is `false`, your database schema is incorrect.
+If `columnTest.success` is `false`, your database schema doesn't match what the app expects.
 
-**Root Cause**: Your Supabase database doesn't have the correct table structure. The `listings` table is missing the `email` column.
+**Common Schema Mismatches**:
+- Table has `seller_email` instead of `email` column
+- Missing `title` column (required for listing names)  
+- Missing `description` column (optional but expected)
+
+**Root Cause**: Your Supabase database schema doesn't match the expected structure.
 
 **SOLUTION**: You need to run the `database.sql` script to create the proper tables.
 
-**SOLUTION**: You need to run the `database.sql` script to create the proper tables.
+**SOLUTION**: You need to fix your database schema to match what the app expects.
 
-**Steps to Fix**:
+**Option 1: Fresh Start (Recommended)**
+1. **Go to Supabase Dashboard** → SQL Editor
+2. **Drop existing tables**:
+   ```sql
+   DROP TABLE IF EXISTS messages CASCADE;
+   DROP TABLE IF EXISTS listings CASCADE;
+   ```
+3. **Run the complete `database.sql` script** to recreate everything correctly
+4. **Restart dev server**: `npm run dev`
 
-1. **Go to your Supabase Dashboard** → [supabase.com/dashboard](https://supabase.com/dashboard)
-2. **Open your project**
-3. **Go to SQL Editor** (left sidebar)
-4. **Copy the ENTIRE contents** of `database.sql` from this project
-5. **Paste and click "Run"**
-6. **Wait for "Success. No rows returned"** message
-7. **Restart your dev server**: `npm run dev`
+**Option 2: Migrate Existing Data**
+If you have important data you want to keep:
+1. **Go to Supabase Dashboard** → SQL Editor  
+2. **Run the `migration-fix-schema.sql` script** (included in project)
+3. **This will add missing columns and rename existing ones**
+
+**Expected Schema After Fix**:
+```sql
+-- listings table should have:
+id          | UUID (Primary Key)
+title       | TEXT (NOT NULL)      -- ← Often missing
+description | TEXT                 -- ← Often missing  
+price       | TEXT (NOT NULL)
+email       | TEXT (NOT NULL)      -- ← Often named 'seller_email'
+category    | TEXT (NOT NULL)
+image_url   | TEXT
+location    | TEXT
+created_at  | TIMESTAMP WITH TIME ZONE
+updated_at  | TIMESTAMP WITH TIME ZONE
+```
 
 **Verification**:
 After running the script, test again:
