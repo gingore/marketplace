@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { apiClient, type Listing } from "@/lib/api-client";
@@ -56,18 +56,20 @@ export default function ItemGrid({
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
 
-  const fetchListings = useCallback(async (isLoadMore = false) => {
+  const fetchListings = async (isLoadMore = false) => {
     try {
       if (!isLoadMore) {
         setLoading(true);
         setError(null);
       }
 
+      const currentOffset = isLoadMore ? offset : 0;
+
       const result = await apiClient.getListings({
         category: selectedCategory === "All" ? undefined : selectedCategory,
         search: searchTerm || undefined,
         limit: 20,
-        offset: isLoadMore ? offset : 0
+        offset: currentOffset
       });
 
       if (result.error) {
@@ -75,23 +77,19 @@ export default function ItemGrid({
       }
 
       if (result.data) {
-        const responseData = result.data as { data?: Listing[]; pagination?: PaginationInfo }; // API response structure
-        const listings = responseData.data || [];
+        const responseData = result.data as { data?: Listing[]; pagination?: PaginationInfo };
+        const newListings = responseData.data || [];
         const pagination = responseData.pagination;
 
-        // Handle empty listings array as valid response, not error
-        const listingsArray = Array.isArray(listings) ? listings : [];
-
         if (isLoadMore) {
-          setListings(prev => [...prev, ...listingsArray]);
+          setListings(prev => [...prev, ...newListings]);
+          setOffset(prev => prev + 20);
         } else {
-          setListings(listingsArray);
-          setOffset(0);
+          setListings(newListings);
+          setOffset(20);
         }
         setHasMore(pagination?.hasMore || false);
-        setOffset(prev => isLoadMore ? prev + 20 : 20);
       } else {
-        // Handle case where result.data is undefined/null
         if (!isLoadMore) {
           setListings([]);
           setOffset(0);
@@ -104,16 +102,14 @@ export default function ItemGrid({
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, searchTerm, offset]);
+  };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    setOffset(0);
   };
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
-    setOffset(0);
   };
 
   const loadMore = () => {
@@ -123,8 +119,45 @@ export default function ItemGrid({
   };
 
   useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const result = await apiClient.getListings({
+          category: selectedCategory === "All" ? undefined : selectedCategory,
+          search: searchTerm || undefined,
+          limit: 20,
+          offset: 0
+        });
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        if (result.data) {
+          const responseData = result.data as { data?: Listing[]; pagination?: PaginationInfo };
+          const newListings = responseData.data || [];
+          const pagination = responseData.pagination;
+
+          setListings(newListings);
+          setOffset(20);
+          setHasMore(pagination?.hasMore || false);
+        } else {
+          setListings([]);
+          setOffset(0);
+          setHasMore(false);
+        }
+      } catch (err) {
+        console.error('Error fetching listings:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load listings');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [selectedCategory, searchTerm]);
 
   if (loading && listings.length === 0) {
     return (

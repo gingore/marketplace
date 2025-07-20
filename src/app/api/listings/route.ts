@@ -99,13 +99,12 @@ export async function POST(request: NextRequest) {
       description: body.description?.trim() || '',
       category: body.category,
       location: body.location || 'Not specified',
-      image_url: body.image_url || null,
-      created_at: new Date().toISOString()
+      image_url: body.image_url || null
     };
 
     const { data: listing, error } = await supabase
       .from('listings')
-      .insert([listingData])
+      .insert(listingData)
       .select()
       .single();
 

@@ -70,6 +70,28 @@ CREATE TRIGGER update_listings_updated_at
   FOR EACH ROW 
   EXECUTE FUNCTION update_updated_at_column();
 
+-- Function to create listings (workaround for schema cache issues)
+CREATE OR REPLACE FUNCTION create_listing_raw(
+  p_title TEXT,
+  p_price TEXT,
+  p_email TEXT,
+  p_description TEXT DEFAULT '',
+  p_category TEXT,
+  p_location TEXT DEFAULT 'Not specified',
+  p_image_url TEXT DEFAULT NULL
+)
+RETURNS JSON AS $$
+DECLARE
+  new_listing JSON;
+BEGIN
+  INSERT INTO listings (title, price, email, description, category, location, image_url)
+  VALUES (p_title, p_price, p_email, p_description, p_category, p_location, p_image_url)
+  RETURNING row_to_json(listings.*) INTO new_listing;
+  
+  RETURN new_listing;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Add some sample data (optional)
 INSERT INTO listings (title, description, price, email, category, location) VALUES
   ('MacBook Pro 13"', 'Excellent condition, barely used. Comes with charger and original box.', '$1,200', 'seller@example.com', 'Electronics', 'Palo Alto, CA'),

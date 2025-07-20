@@ -1,5 +1,33 @@
 # Troubleshooting Guide
 
+## 🚨 CRITICAL: Schema Cache Issue (PGRST204)
+
+**Problem**: Getting error "Could not find the 'email' column of 'listings' in the schema cache" when creating listings.
+
+**Root Cause**: Supabase's PostgREST schema cache is out of sync with your database.
+
+**Solution Steps**:
+
+1. **Go to your Supabase Dashboard**
+2. **Navigate to Settings → API**
+3. **Find "Schema Cache" section**
+4. **Click "Reload Schema"** or **"Refresh Schema Cache"**
+5. **Wait 30-60 seconds for cache to refresh**
+6. **Test the app again**
+
+**Alternative Solution - Reset Database**:
+If schema refresh doesn't work:
+1. Go to SQL Editor in Supabase
+2. Run: `DROP TABLE IF EXISTS listings CASCADE;`
+3. Run: `DROP TABLE IF EXISTS messages CASCADE;`
+4. Copy and paste the entire `database.sql` script again
+5. Run the script to recreate everything
+
+**Why This Happens**: 
+- Database schema was modified outside of migrations
+- Supabase cache didn't automatically update
+- Common with manual SQL script execution
+
 ## Common Issues and Solutions
 
 ### 1. "Failed to fetch" or "Could not find the 'email' column" Errors
