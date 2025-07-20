@@ -5,12 +5,10 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import Header from "@/components/Header";
-import { useListings } from "@/hooks/useListings";
-import { type Listing } from "@/lib/supabase";
+import Header from "@/components/layout/header";
+import { apiClient, type Listing } from "@/lib/api-client";
 
-export default function ListingDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { getListing, sendMessage } = useListings();
+export default function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("I want to buy your item!");
@@ -32,13 +30,18 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
     if (!listingId) return;
     
     async function fetchListing() {
-      const data = await getListing(listingId!);
-      setListing(data);
+      const { data, error } = await apiClient.getListing(listingId!);
+      if (error) {
+        console.error('Error fetching listing:', error);
+        setListing(null);
+      } else {
+        setListing(data as Listing || null);
+      }
       setLoading(false);
     }
     
     fetchListing();
-  }, [listingId, getListing]);
+  }, [listingId]);
 
   const handleSendMessage = async () => {
     if (!buyerName || !buyerEmail || !message || !listing) {
@@ -49,7 +52,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
     setIsSending(true);
     setMessageStatus(null);
 
-    const { error } = await sendMessage({
+    const { error } = await apiClient.sendMessage({
       listing_id: listing.id,
       buyer_name: buyerName,
       buyer_email: buyerEmail,
@@ -95,7 +98,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
         <Header showBackButton={true} backUrl="/" />
         <div className="max-w-6xl mx-auto p-6">
           <div className="text-center py-12">
-            <p className="text-gray-600">Listing not found</p>
+            <p className="text-gray-600">Item not found</p>
           </div>
         </div>
       </div>
@@ -106,7 +109,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
     <div className="min-h-screen bg-gray-50">
       <Header showBackButton={true} backUrl="/" />
 
-      <div className="max-w-6xl mx-auto p-6 flex gap-8">
+      <div className="max-w-6xl mx-auto p-6 flex flex-col lg:flex-row gap-8">
         {/* Left Side - Image */}
         <div className="flex-1">
           {listing.image_url ? (
@@ -125,8 +128,8 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
         </div>
 
         {/* Right Side - Details */}
-        <div className="w-80 flex-shrink-0">
-          <div className="space-y-6">
+        <div className="w-full lg:w-80 flex-shrink-0">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
             {/* Title and Price */}
             <div>
               <h1 className="text-2xl font-bold mb-2">{listing.title}</h1>
@@ -141,9 +144,20 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
             </div>
 
             {/* Listing Info */}
-            <div className="text-sm text-gray-600">
-              <p>Listed {new Date(listing.created_at).toLocaleDateString()}</p>
-              <p>in {listing.location}</p>
+            <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8l-6-6m0 0V9a2 2 0 012-2h4m-6 6l6 6m-6-6H9a2 2 0 002-2v4m6-6l6 6m-6-6v4a2 2 0 002 2h4" />
+                </svg>
+                <span>Listed {new Date(listing.created_at).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>{listing.location}</span>
+              </div>
             </div>
 
             {/* Description */}
@@ -154,8 +168,22 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
               </div>
             )}
 
+            {/* Seller Info */}
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Seller Information
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Contact seller at:</p>
+                <p className="font-medium">{listing.email}</p>
+              </div>
+            </div>
+
             {/* Message Section */}
-            <div>
+            <div className="border-t border-gray-200 pt-6">
               <h3 className="font-semibold mb-3">Message Seller</h3>
               
               {messageStatus && (

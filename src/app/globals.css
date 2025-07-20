@@ -41,6 +41,11 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Facebook Blue */
+  --color-facebook: #1877F2;
+  --color-facebook-dark: #165CE6;
+  --color-facebook-light: #E3F2FD;
 }
 
 :root {
