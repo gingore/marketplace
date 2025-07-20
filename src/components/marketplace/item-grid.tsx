@@ -106,10 +106,12 @@ export default function ItemGrid({
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    setOffset(0);
   };
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
+    setOffset(0);
   };
 
   const loadMore = () => {
@@ -119,6 +121,8 @@ export default function ItemGrid({
   };
 
   useEffect(() => {
+    let isCancelled = false;
+    
     const loadData = async () => {
       try {
         setLoading(true);
@@ -130,6 +134,8 @@ export default function ItemGrid({
           limit: 20,
           offset: 0
         });
+
+        if (isCancelled) return; // Prevent state updates if component unmounted
 
         if (result.error) {
           throw new Error(result.error);
@@ -149,14 +155,23 @@ export default function ItemGrid({
           setHasMore(false);
         }
       } catch (err) {
-        console.error('Error fetching listings:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load listings');
+        if (!isCancelled) {
+          console.error('Error fetching listings:', err);
+          setError(err instanceof Error ? err.message : 'Failed to load listings');
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
+
+    // Cleanup function to prevent state updates if component unmounts
+    return () => {
+      isCancelled = true;
+    };
   }, [selectedCategory, searchTerm]);
 
   if (loading && listings.length === 0) {
@@ -251,7 +266,7 @@ export default function ItemGrid({
             {searchTerm ? 
               `No listings match "${searchTerm}"` : 
               selectedCategory !== "All" ? 
-                `No listings in ${selectedCategory}` :
+                `No items listed in ${selectedCategory} yet` :
                 "No listings available yet"
             }
           </p>
@@ -262,7 +277,7 @@ export default function ItemGrid({
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Create First Listing
+            {selectedCategory !== "All" ? "List an Item" : "Create First Listing"}
           </Link>
         </div>
       ) : (
