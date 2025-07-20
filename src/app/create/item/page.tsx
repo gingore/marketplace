@@ -150,12 +150,20 @@ export default function CreateItem() {
     try {
       let imageUrl = null;
       
+      // Try to upload image, but don't fail the entire listing if upload fails
       if (imageFile) {
-        const uploadResult = await apiClient.uploadImage(imageFile);
-        if (uploadResult.error) {
-          throw new Error(uploadResult.error);
+        try {
+          const uploadResult = await apiClient.uploadImage(imageFile);
+          if (uploadResult.error) {
+            console.warn('Image upload failed:', uploadResult.error);
+            // Continue without image instead of failing
+          } else {
+            imageUrl = uploadResult.data?.url;
+          }
+        } catch (uploadError) {
+          console.warn('Image upload error:', uploadError);
+          // Continue without image instead of failing
         }
-        imageUrl = uploadResult.data?.url;
       }
 
       const { error: createError } = await apiClient.createListing({
@@ -195,7 +203,7 @@ export default function CreateItem() {
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Photos <span className="text-red-500">*</span>
+                Photos <span className="text-gray-500">(optional)</span>
               </label>
               <div 
                 onClick={handleImageSelect}

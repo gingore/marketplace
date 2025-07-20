@@ -2,6 +2,10 @@
 
 A modern marketplace application built with Next.js, Tailwind CSS, and Supabase.
 
+## ⚠️ Important Setup Note
+
+**You MUST run the `database.sql` script in your Supabase dashboard before using the app!** The app will not work without the database tables and policies.
+
 ## Features
 
 📝 **Create Listing**: Users can upload photos and fill in title, description, price, email, and category  
