@@ -4,29 +4,70 @@
 
 **Problem**: Getting error "Could not find the 'email' column of 'listings' in the schema cache" when creating listings.
 
-**Root Cause**: Supabase's PostgREST schema cache is out of sync with your database.
+**Quick Diagnosis**: Test your schema with:
+```bash
+curl http://localhost:3000/api/test-connection
+```
+If `columnTest.success` is `false`, your database schema is incorrect.
 
-**Solution Steps**:
+**Root Cause**: Your Supabase database doesn't have the correct table structure. The `listings` table is missing the `email` column.
 
-1. **Go to your Supabase Dashboard**
-2. **Navigate to Settings → API**
-3. **Find "Schema Cache" section**
-4. **Click "Reload Schema"** or **"Refresh Schema Cache"**
-5. **Wait 30-60 seconds for cache to refresh**
-6. **Test the app again**
+**SOLUTION**: You need to run the `database.sql` script to create the proper tables.
 
-**Alternative Solution - Reset Database**:
-If schema refresh doesn't work:
-1. Go to SQL Editor in Supabase
-2. Run: `DROP TABLE IF EXISTS listings CASCADE;`
-3. Run: `DROP TABLE IF EXISTS messages CASCADE;`
-4. Copy and paste the entire `database.sql` script again
-5. Run the script to recreate everything
+**SOLUTION**: You need to run the `database.sql` script to create the proper tables.
+
+**Steps to Fix**:
+
+1. **Go to your Supabase Dashboard** → [supabase.com/dashboard](https://supabase.com/dashboard)
+2. **Open your project**
+3. **Go to SQL Editor** (left sidebar)
+4. **Copy the ENTIRE contents** of `database.sql` from this project
+5. **Paste and click "Run"**
+6. **Wait for "Success. No rows returned"** message
+7. **Restart your dev server**: `npm run dev`
+
+**Verification**:
+After running the script, test again:
+```bash
+curl http://localhost:3000/api/test-connection
+# columnTest.success should now be true
+```
 
 **Why This Happens**: 
 - Database schema was modified outside of migrations
 - Supabase cache didn't automatically update
 - Common with manual SQL script execution
+- Tables might not have been created with the correct schema
+
+**Verify Your Schema**:
+Check your Supabase dashboard tables match this schema:
+
+**listings table should have these columns**:
+```sql
+id          | UUID (Primary Key)
+title       | TEXT (NOT NULL)
+description | TEXT
+price       | TEXT (NOT NULL) 
+email       | TEXT (NOT NULL)  -- ← This is the missing column!
+category    | TEXT (NOT NULL)
+image_url   | TEXT
+location    | TEXT
+created_at  | TIMESTAMP WITH TIME ZONE
+updated_at  | TIMESTAMP WITH TIME ZONE
+```
+
+**messages table should have these columns**:
+```sql
+id           | UUID (Primary Key)
+listing_id   | UUID (Foreign Key → listings.id)
+buyer_name   | TEXT (NOT NULL)
+buyer_email  | TEXT (NOT NULL)
+message      | TEXT (NOT NULL)
+seller_email | TEXT (NOT NULL)
+created_at   | TIMESTAMP WITH TIME ZONE
+```
+
+If your schema is different, run the `database.sql` script to recreate the tables correctly.
 
 ## Common Issues and Solutions
 
@@ -113,13 +154,20 @@ CREATE POLICY "Enable insert access for all users" ON listings FOR INSERT WITH C
 
 ## Testing Your Setup
 
-### 1. Test Database Connection
+### 1. Test Database Connection & Schema
+```bash
+curl http://localhost:3000/api/test-connection
+# Check the columnTest.success field - should be true
+# If false, your schema doesn't match the expected structure
+```
+
+### 2. Test Listings API
 ```bash
 curl http://localhost:3000/api/listings
 # Should return: {"success":true,"data":[...],"pagination":{...}}
 ```
 
-### 2. Test Creating a Listing (without image)
+### 3. Test Creating a Listing (without image)
 ```bash
 curl -X POST http://localhost:3000/api/listings \
   -H "Content-Type: application/json" \
@@ -132,7 +180,7 @@ curl -X POST http://localhost:3000/api/listings \
   }'
 ```
 
-### 3. Test Image Upload
+### 4. Test Image Upload
 ```bash
 curl -X POST http://localhost:3000/api/upload \
   -F "file=@path/to/image.jpg"

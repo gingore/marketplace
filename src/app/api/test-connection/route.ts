@@ -22,11 +22,17 @@ export async function GET() {
       details: schemaError?.details
     });
 
-    // Try to query the pg_tables to see what tables exist
-    const { data: tablesData, error: tablesError } = await supabase
-      .rpc('get_tables_info');
+    // Try to get table information using a simple query
+    const { data: testInsert, error: insertError } = await supabase
+      .from('listings')
+      .select('id, title, email, created_at')
+      .limit(0);
 
-    console.log('Tables query result:', { data: tablesData, error: tablesError?.message });
+    console.log('Column test result:', { 
+      success: !insertError,
+      error: insertError?.message,
+      code: insertError?.code
+    });
 
     return NextResponse.json({
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -38,10 +44,11 @@ export async function GET() {
         code: schemaError?.code,
         dataLength: schemaData?.length || 0
       },
-      tablesQuery: {
-        success: !tablesError,
-        error: tablesError?.message,
-        data: tablesData
+      columnTest: {
+        success: !insertError,
+        error: insertError?.message,
+        code: insertError?.code,
+        hint: insertError ? "Check if your database tables have the correct schema" : "Schema looks good"
       }
     });
 
