@@ -1,6 +1,3 @@
-// API client for making requests to our Next.js API routes
-// This provides an alternative to direct Supabase client usage
-
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-domain.com/api' 
   : '/api';
@@ -32,7 +29,6 @@ class ApiClient {
     }
   }
 
-  // Listings API
   async getListings(params?: {
     category?: string;
     search?: string;
@@ -45,7 +41,6 @@ class ApiClient {
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.offset) searchParams.set('offset', params.offset.toString());
     
-    // Add cache busting to ensure fresh data
     searchParams.set('_t', Date.now().toString());
 
     const query = searchParams.toString();

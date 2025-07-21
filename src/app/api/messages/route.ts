@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-// GET /api/messages - Get messages for listing
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -10,7 +9,6 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Validate required parameters
     if (!listingId && !sellerEmail) {
       return NextResponse.json(
         { error: 'Either listing_id or seller_email is required' },
@@ -24,7 +22,6 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Apply filters
     if (listingId) {
       query = query.eq('listing_id', listingId);
     }
@@ -60,15 +57,12 @@ export async function GET(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  }
 }
 
-// POST /api/messages - Send message to seller
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Input validation - buyer_name is now optional
     const requiredFields = ['listing_id', 'buyer_email', 'message', 'seller_email'];
     const missingFields = requiredFields.filter(field => !body[field]);
     
@@ -82,7 +76,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(body.buyer_email)) {
       return NextResponse.json(
@@ -98,7 +91,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify listing exists
     const { data: listing, error: listingError } = await supabase
       .from('listings')
       .select('id, seller_email')
@@ -115,7 +107,6 @@ export async function POST(request: NextRequest) {
       throw listingError;
     }
 
-    // Verify seller email matches listing
     if (listing.seller_email !== body.seller_email) {
       return NextResponse.json(
         { error: 'Seller email does not match listing' },
@@ -123,7 +114,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare message data - include buyer_name in message text if provided
     let messageText = body.message.trim();
     if (body.buyer_name && body.buyer_name.trim()) {
       messageText = `From: ${body.buyer_name.trim()}\n\n${messageText}`;
@@ -150,13 +140,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    // TODO: Implement email notification to seller
-    // This would typically integrate with an email service like:
-    // - SendGrid
-    // - AWS SES
-    // - Resend
-    // - Nodemailer with SMTP
     
     return NextResponse.json(
       {

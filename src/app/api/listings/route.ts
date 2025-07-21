@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-// GET /api/listings - Browse with search/filter
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -16,12 +15,10 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Apply category filter
     if (category && category !== 'all') {
       query = query.eq('category', category);
     }
 
-    // Apply search filter
     if (search) {
       query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
     }
@@ -62,12 +59,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/listings - Create new listing
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Input validation
     const requiredFields = ['title', 'price', 'seller_email', 'category'];
     const missingFields = requiredFields.filter(field => !body[field]);
     
