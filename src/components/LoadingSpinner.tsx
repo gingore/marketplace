@@ -45,7 +45,6 @@ export default function LoadingSpinner({
   );
 }
 
-// Inline spinner for buttons
 export function InlineSpinner({ className = '' }: { className?: string }) {
   return (
     <svg
@@ -70,7 +69,6 @@ export function InlineSpinner({ className = '' }: { className?: string }) {
   );
 }
 
-// Full page loading overlay
 export function PageLoader({ text = "Loading..." }: { text?: string }) {
   return (
     <div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">

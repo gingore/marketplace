@@ -14,7 +14,6 @@ function HomeContent() {
   useEffect(() => {
     if (searchParams.get('success') === 'listing-created') {
       setShowSuccessMessage(true);
-      // Hide message after 5 seconds
       const timer = setTimeout(() => setShowSuccessMessage(false), 5000);
       return () => clearTimeout(timer);
     }

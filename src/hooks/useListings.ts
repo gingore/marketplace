@@ -41,7 +41,6 @@ export function useListings() {
 
       if (error) throw error
       
-      // Add the new listing to the local state
       setListings(prev => [data, ...prev])
       
       return { data, error: null }
@@ -76,9 +75,6 @@ export function useListings() {
         .single()
 
       if (error) throw error
-
-      // Here you could also trigger an email notification
-      // await sendEmailNotification(messageData)
 
       return { data, error: null }
     } catch (err) {

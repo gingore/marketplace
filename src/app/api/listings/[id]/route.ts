@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-// GET /api/listings/[id] - Get specific listing
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -9,7 +8,6 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Validate ID parameter
     if (!id) {
       return NextResponse.json(
         { error: 'Listing ID is required' },
@@ -55,7 +53,6 @@ export async function GET(
   }
 }
 
-// PUT /api/listings/[id] - Update specific listing (optional enhancement)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -64,7 +61,6 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // Validate ID parameter
     if (!id) {
       return NextResponse.json(
         { error: 'Listing ID is required' },
@@ -72,7 +68,6 @@ export async function PUT(
       );
     }
 
-    // Check if listing exists
     const { error: fetchError } = await supabase
       .from('listings')
       .select('*')
@@ -89,7 +84,6 @@ export async function PUT(
       throw fetchError;
     }
 
-    // Prepare update data (only allow certain fields to be updated)
     const allowedFields = ['title', 'price', 'description', 'category', 'location', 'image_url'];
     const updateData: Record<string, string | null> = {};
     
@@ -99,7 +93,6 @@ export async function PUT(
       }
     });
 
-    // Add updated timestamp
     updateData.updated_at = new Date().toISOString();
 
     const { data: updatedListing, error: updateError } = await supabase
@@ -140,7 +133,6 @@ export async function PUT(
   }
 }
 
-// DELETE /api/listings/[id] - Delete specific listing (optional enhancement)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -148,7 +140,6 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Validate ID parameter
     if (!id) {
       return NextResponse.json(
         { error: 'Listing ID is required' },

@@ -86,7 +86,6 @@ class ApiClient {
     });
   }
 
-  // Messages API
   async getMessages(params: {
     listing_id?: string;
     seller_email?: string;
@@ -115,7 +114,6 @@ class ApiClient {
     });
   }
 
-  // Upload API
   async uploadImage(file: File) {
     const formData = new FormData();
     formData.append('file', file);
@@ -146,10 +144,8 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
 export const apiClient = new ApiClient();
 
-// Export types for better TypeScript support
 export interface Listing {
   id: string;
   title: string;

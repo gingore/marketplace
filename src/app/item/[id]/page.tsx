@@ -20,11 +20,9 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
   useEffect(() => {
     async function fetchListing() {
       try {
-        // Get the ID from params
         const resolvedParams = await params;
         const id = resolvedParams.id;
         
-        // Use Supabase directly for more reliable data fetching
         const { data: listing, error } = await supabase
           .from('listings')
           .select('*')
@@ -35,7 +33,6 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
           console.error('Error fetching listing:', error);
           setListing(null);
         } else if (listing) {
-          // Format price for display
           const formattedListing = {
             ...listing,
             price: `$${listing.price}`
@@ -65,7 +62,6 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
     setMessageStatus(null);
 
     try {
-      // Use the API endpoint for reliable message sending
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: {

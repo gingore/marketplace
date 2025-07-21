@@ -13,14 +13,11 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
   useEffect(() => {
     async function getParams() {
       const resolvedParams = await params;
-      // Convert slug back to category name with proper URL decoding
-      // e.g., "garden-&-outdoor" -> "Garden & Outdoor"
       let name = resolvedParams.slug
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
       
-      // Properly decode URL-encoded characters like %26 back to &
       name = decodeURIComponent(name);
       
       setCategoryName(name);

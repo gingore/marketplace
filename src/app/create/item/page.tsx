@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Header from "@/components/layout/header";
 import { apiClient } from "@/lib/api-client";
 import { validateImageFile } from "@/lib/upload";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const categories = [
   "Vehicles",
@@ -33,7 +34,7 @@ const categories = [
   "Buy and sell groups"
 ];
 
-export default function CreateItem() {
+function CreateItemForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,7 +54,6 @@ export default function CreateItem() {
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Pre-select category from URL parameter
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     if (categoryParam) {
@@ -117,12 +117,9 @@ export default function CreateItem() {
     }
   };
 
-  // Price formatting
   const handlePriceChange = (value: string) => {
-    // Remove any non-digit characters except decimal point
     const cleanValue = value.replace(/[^\d.]/g, '');
     
-    // Format as currency if there's a value
     if (cleanValue) {
       const formatted = cleanValue.startsWith('$') ? cleanValue : `$${cleanValue}`;
       handleInputChange('price', formatted);
@@ -131,7 +128,6 @@ export default function CreateItem() {
     }
   };
 
-  // Email validation
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -140,7 +136,6 @@ export default function CreateItem() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Enhanced validation
     if (!formData.title || !formData.price || !formData.seller_email || !formData.category) {
       setError("Please fill in all required fields");
       return;
@@ -162,19 +157,16 @@ export default function CreateItem() {
     try {
       let imageUrl = null;
       
-      // Try to upload image, but don't fail the entire listing if upload fails
       if (imageFile) {
         try {
           const uploadResult = await apiClient.uploadImage(imageFile);
           if (uploadResult.error) {
             console.warn('Image upload failed:', uploadResult.error);
-            // Continue without image instead of failing
           } else {
             imageUrl = uploadResult.data?.url;
           }
         } catch (uploadError) {
           console.warn('Image upload error:', uploadError);
-          // Continue without image instead of failing
         }
       }
 
@@ -192,7 +184,6 @@ export default function CreateItem() {
         throw new Error(createError);
       }
 
-      // Show success message and redirect
       router.push('/?success=listing-created');
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -425,5 +416,13 @@ export default function CreateItem() {
       </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateItem() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <CreateItemForm />
+    </Suspense>
   );
 }

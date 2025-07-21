@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Format prices back to string format for frontend
     const formattedListings = listings?.map(listing => ({
       ...listing,
       price: `$${listing.price}`
@@ -76,7 +75,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(body.seller_email)) {
       return NextResponse.json(
@@ -85,7 +83,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Price validation and conversion
     if (!body.price.startsWith('$')) {
       return NextResponse.json(
         { error: 'Price must be in format $XX.XX' },
@@ -93,8 +90,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert price from "$XX.XX" to numeric value
-    const priceString = body.price.slice(1); // Remove the $ sign
+    const priceString = body.price.slice(1);
     const priceNumber = parseFloat(priceString);
     
     if (isNaN(priceNumber) || priceNumber < 0) {
