@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
-import { useListings } from "@/hooks/useListings";
-import { type Listing } from "@/lib/supabase";
+import { supabase, type Listing } from "@/lib/supabase";
+import { apiClient } from "@/lib/api-client";
 
 export default function ListingDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { getListing, sendMessage } = useListings();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("I want to buy your item!");
@@ -18,27 +17,50 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
   const [buyerEmail, setBuyerEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [messageStatus, setMessageStatus] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [listingId, setListingId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function getParams() {
-      const resolvedParams = await params;
-      setListingId(resolvedParams.id);
-    }
-    getParams();
-  }, [params]);
-
-  useEffect(() => {
-    if (!listingId) return;
-    
     async function fetchListing() {
-      const data = await getListing(listingId!);
-      setListing(data);
-      setLoading(false);
+      try {
+        // Get the ID from params
+        const resolvedParams = await params;
+        const id = resolvedParams.id;
+        
+        console.log('Fetching listing with ID:', id);
+        
+        // Use Supabase directly for more reliable data fetching
+        const { data: listing, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        console.log('Supabase response:', { listing, error });
+
+        if (error) {
+          console.error('Error fetching listing:', error);
+          setListing(null);
+        } else if (listing) {
+          // Format price for display
+          const formattedListing = {
+            ...listing,
+            price: `$${listing.price}`
+          };
+          console.log('Setting listing:', formattedListing);
+          setListing(formattedListing);
+        } else {
+          console.log('No listing found');
+          setListing(null);
+        }
+      } catch (err) {
+        console.error('Error fetching listing:', err);
+        setListing(null);
+      } finally {
+        setLoading(false);
+      }
     }
     
     fetchListing();
-  }, [listingId, getListing]);
+  }, [params]);
 
   const handleSendMessage = async () => {
     if (!buyerName || !buyerEmail || !message || !listing) {
@@ -49,21 +71,26 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
     setIsSending(true);
     setMessageStatus(null);
 
-    const { error } = await sendMessage({
-      listing_id: listing.id,
-      buyer_name: buyerName,
-      buyer_email: buyerEmail,
-      message: message,
-      seller_email: listing.email
-    });
+    try {
+      const result = await apiClient.sendMessage({
+        listing_id: listing.id,
+        buyer_name: buyerName,
+        buyer_email: buyerEmail,
+        message: message,
+        seller_email: listing.seller_email
+      });
 
-    if (error) {
-      setMessageStatus({ type: 'error', text: error });
-    } else {
-      setMessageStatus({ type: 'success', text: 'Message sent successfully!' });
-      setMessage("");
-      setBuyerName("");
-      setBuyerEmail("");
+      if (result.error) {
+        setMessageStatus({ type: 'error', text: result.error });
+      } else {
+        setMessageStatus({ type: 'success', text: 'Message sent successfully!' });
+        setMessage("");
+        setBuyerName("");
+        setBuyerEmail("");
+      }
+    } catch (err) {
+      console.error('Send message error:', err);
+      setMessageStatus({ type: 'error', text: 'Failed to send message' });
     }
 
     setIsSending(false);
@@ -84,6 +111,7 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
               </div>
             </div>
           </div>
+          <p className="text-center mt-4 text-gray-500">Debug: Loading...</p>
         </div>
       </div>
     );
@@ -96,11 +124,14 @@ export default function ListingDetail({ params }: { params: Promise<{ id: string
         <div className="max-w-6xl mx-auto p-6">
           <div className="text-center py-12">
             <p className="text-gray-600">Listing not found</p>
+            <p className="text-sm text-gray-400 mt-2">Debug: loading = {loading.toString()}</p>
           </div>
         </div>
       </div>
     );
   }
+
+  console.log('Rendering listing:', listing);
 
   return (
     <div className="min-h-screen bg-gray-50">

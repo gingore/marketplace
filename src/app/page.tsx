@@ -57,8 +57,18 @@ function HomeContent() {
 
         {/* Main Content */}
         <main className="flex-1">
+          {/* Header with Create Button */}
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Today&apos;s picks</h1>
+            <Link href="/create/item">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                + Create Listing
+              </button>
+            </Link>
+          </div>
+          
           <ItemGrid 
-            title="Today's picks"
+            title=""
             enableSearch={true}
             enableCategoryFilter={true}
           />

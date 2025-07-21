@@ -25,7 +25,7 @@ class ApiClient {
         return { error: result.error || 'Request failed' };
       }
 
-      return { data: result.data || result };
+      return { data: result };
     } catch (error) {
       console.error('API request failed:', error);
       return { error: 'Network error' };
@@ -44,6 +44,9 @@ class ApiClient {
     if (params?.search) searchParams.set('search', params.search);
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.offset) searchParams.set('offset', params.offset.toString());
+    
+    // Add cache busting to ensure fresh data
+    searchParams.set('_t', Date.now().toString());
 
     const query = searchParams.toString();
     return this.request(`/listings${query ? `?${query}` : ''}`);
@@ -56,7 +59,7 @@ class ApiClient {
   async createListing(listing: {
     title: string;
     price: string;
-    email: string;
+    seller_email: string;
     description?: string;
     category: string;
     location?: string;
@@ -156,7 +159,7 @@ export interface Listing {
   id: string;
   title: string;
   price: string;
-  email: string;
+  seller_email: string;
   description?: string;
   category: string;
   location: string;

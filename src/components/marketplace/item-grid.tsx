@@ -55,6 +55,21 @@ export default function ItemGrid({
   const [selectedCategory, setSelectedCategory] = useState(category || "All");
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Force refresh function
+  const forceRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  // Check for success params to trigger refresh
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'listing-created') {
+      // Force a refresh when returning from successful listing creation
+      setTimeout(() => forceRefresh(), 100);
+    }
+  }, []);
 
   const fetchListings = async (isLoadMore = false) => {
     try {
@@ -77,9 +92,11 @@ export default function ItemGrid({
       }
 
       if (result.data) {
-        const responseData = result.data as { data?: Listing[]; pagination?: PaginationInfo };
-        const newListings = responseData.data || [];
-        const pagination = responseData.pagination;
+        const responseData = result.data as { success?: boolean; data?: Listing[]; pagination?: PaginationInfo };
+        
+        // Extract listings and pagination from the API response
+        const newListings: Listing[] = responseData.data || [];
+        const pagination: PaginationInfo | undefined = responseData.pagination;
 
         if (isLoadMore) {
           setListings(prev => [...prev, ...newListings]);
@@ -142,9 +159,11 @@ export default function ItemGrid({
         }
 
         if (result.data) {
-          const responseData = result.data as { data?: Listing[]; pagination?: PaginationInfo };
-          const newListings = responseData.data || [];
-          const pagination = responseData.pagination;
+          const responseData = result.data as { success?: boolean; data?: Listing[]; pagination?: PaginationInfo };
+          
+          // Extract listings and pagination from the API response
+          const newListings: Listing[] = responseData.data || [];
+          const pagination: PaginationInfo | undefined = responseData.pagination;
 
           setListings(newListings);
           setOffset(20);
@@ -172,7 +191,7 @@ export default function ItemGrid({
     return () => {
       isCancelled = true;
     };
-  }, [selectedCategory, searchTerm]);
+  }, [selectedCategory, searchTerm, refreshKey]);
 
   if (loading && listings.length === 0) {
     return (

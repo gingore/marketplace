@@ -2,7 +2,7 @@
 
 ## The Issue
 You're seeing these errors because the Supabase database tables haven't been created properly:
-- "Could not find the 'email' column" 
+- "Could not find the 'seller_email' column" or "Could not find the 'buyer_name' column"
 - Loading/error loops in the interface
 - "Bucket not found" for image uploads
 
@@ -16,15 +16,18 @@ You're seeing these errors because the Supabase database tables haven't been cre
 5. **Paste and click "Run"**
 6. **Wait for "Success. No rows returned"** message
 
-### 2. Refresh Schema Cache
+### 2. Update Existing Tables (If Needed)
+If you have existing tables that are missing columns, run the `add-buyer-name-column.sql` script to add the missing `buyer_name` column to the messages table.
+
+### 3. Refresh Schema Cache
 1. **Go to Settings → API** in your Supabase dashboard
 2. **Find "Schema Cache" section**
 3. **Click "Reload Schema"**
 4. **Wait 30 seconds**
 
-### 3. Set Up Image Storage (Optional)
+### 4. Set Up Image Storage
 1. **Go to Storage** in Supabase dashboard
-2. **Create new bucket** named `images`
+2. **Create new bucket** named `listing-images` (not `images`)
 3. **Make it public** ✅
 4. **Policies are already set up** in the SQL script
 

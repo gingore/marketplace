@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Input validation
-    const requiredFields = ['listing_id', 'buyer_name', 'buyer_email', 'message', 'seller_email'];
+    // Input validation - buyer_name is now optional
+    const requiredFields = ['listing_id', 'buyer_email', 'message', 'seller_email'];
     const missingFields = requiredFields.filter(field => !body[field]);
     
     if (missingFields.length > 0) {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Verify listing exists
     const { data: listing, error: listingError } = await supabase
       .from('listings')
-      .select('id, email')
+      .select('id, seller_email')
       .eq('id', body.listing_id)
       .single();
 
@@ -116,18 +116,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify seller email matches listing
-    if (listing.email !== body.seller_email) {
+    if (listing.seller_email !== body.seller_email) {
       return NextResponse.json(
         { error: 'Seller email does not match listing' },
         { status: 400 }
       );
     }
 
+    // Prepare message data - include buyer_name in message text if provided
+    let messageText = body.message.trim();
+    if (body.buyer_name && body.buyer_name.trim()) {
+      messageText = `From: ${body.buyer_name.trim()}\n\n${messageText}`;
+    }
+
     const messageData = {
       listing_id: body.listing_id,
-      buyer_name: body.buyer_name.trim(),
       buyer_email: body.buyer_email.toLowerCase().trim(),
-      message: body.message.trim(),
+      message: messageText,
       seller_email: body.seller_email.toLowerCase().trim(),
       created_at: new Date().toISOString()
     };

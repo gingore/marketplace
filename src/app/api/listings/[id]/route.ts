@@ -40,7 +40,10 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: listing
+      data: {
+        ...listing,
+        price: `$${listing.price}`
+      }
     });
 
   } catch (error) {

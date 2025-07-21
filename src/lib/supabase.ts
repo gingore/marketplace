@@ -11,7 +11,7 @@ export interface Listing {
   title: string
   description: string
   price: string
-  email: string
+  seller_email: string
   category: string
   image_url?: string
   location: string

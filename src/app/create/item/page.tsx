@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,12 +35,13 @@ const categories = [
 
 export default function CreateItem() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     title: "",
     price: "",
-    email: "",
+    seller_email: "",
     description: "",
     category: "",
     location: "Palo Alto, CA"
@@ -51,6 +52,17 @@ export default function CreateItem() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Pre-select category from URL parameter
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setFormData(prev => ({
+        ...prev,
+        category: categoryParam
+      }));
+    }
+  }, [searchParams]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -129,12 +141,12 @@ export default function CreateItem() {
     e.preventDefault();
     
     // Enhanced validation
-    if (!formData.title || !formData.price || !formData.email || !formData.category) {
+    if (!formData.title || !formData.price || !formData.seller_email || !formData.category) {
       setError("Please fill in all required fields");
       return;
     }
 
-    if (!validateEmail(formData.email)) {
+    if (!validateEmail(formData.seller_email)) {
       setError("Please enter a valid email address");
       return;
     }
@@ -169,7 +181,7 @@ export default function CreateItem() {
       const { error: createError } = await apiClient.createListing({
         title: formData.title,
         price: formData.price,
-        email: formData.email,
+        seller_email: formData.seller_email,
         description: formData.description,
         category: formData.category,
         location: formData.location,
@@ -338,8 +350,8 @@ export default function CreateItem() {
               </label>
               <Input
                 type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                value={formData.seller_email}
+                onChange={(e) => handleInputChange('seller_email', e.target.value)}
                 placeholder="your.email@example.com"
                 className="w-full"
                 required

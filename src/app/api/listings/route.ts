@@ -36,9 +36,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Format prices back to string format for frontend
+    const formattedListings = listings?.map(listing => ({
+      ...listing,
+      price: `$${listing.price}`
+    }));
+
     return NextResponse.json({
       success: true,
-      data: listings,
+      data: formattedListings,
       pagination: {
         total: count,
         limit,
@@ -62,7 +68,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Input validation
-    const requiredFields = ['title', 'price', 'email', 'category'];
+    const requiredFields = ['title', 'price', 'seller_email', 'category'];
     const missingFields = requiredFields.filter(field => !body[field]);
     
     if (missingFields.length > 0) {
@@ -77,14 +83,14 @@ export async function POST(request: NextRequest) {
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(body.email)) {
+    if (!emailRegex.test(body.seller_email)) {
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 }
       );
     }
 
-    // Price validation
+    // Price validation and conversion
     if (!body.price.startsWith('$')) {
       return NextResponse.json(
         { error: 'Price must be in format $XX.XX' },
@@ -92,10 +98,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Convert price from "$XX.XX" to numeric value
+    const priceString = body.price.slice(1); // Remove the $ sign
+    const priceNumber = parseFloat(priceString);
+    
+    if (isNaN(priceNumber) || priceNumber < 0) {
+      return NextResponse.json(
+        { error: 'Invalid price format' },
+        { status: 400 }
+      );
+    }
+
     const listingData = {
       title: body.title.trim(),
-      price: body.price,
-      email: body.email.toLowerCase().trim(),
+      price: priceNumber,
+      seller_email: body.seller_email.toLowerCase().trim(),
       description: body.description?.trim() || '',
       category: body.category,
       location: body.location || 'Not specified',
@@ -120,7 +137,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        data: listing,
+        data: {
+          ...listing,
+          price: `$${listing.price}`
+        },
         message: 'Listing created successfully'
       },
       { status: 201 }

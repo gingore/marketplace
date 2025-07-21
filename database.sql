@@ -1,101 +1,65 @@
 -- Create listings table
-CREATE TABLE IF NOT EXISTS listings (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
+CREATE TABLE listings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(255) NOT NULL,
   description TEXT,
-  price TEXT NOT NULL,
-  email TEXT NOT NULL,
-  category TEXT NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  seller_email VARCHAR(255) NOT NULL,
   image_url TEXT,
-  location TEXT DEFAULT 'Palo Alto, CA',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+  location VARCHAR(255) DEFAULT 'Palo Alto, CA',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create messages table
-CREATE TABLE IF NOT EXISTS messages (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+CREATE TABLE messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   listing_id UUID REFERENCES listings(id) ON DELETE CASCADE,
-  buyer_name TEXT NOT NULL,
-  buyer_email TEXT NOT NULL,
+  buyer_name VARCHAR(255) NOT NULL,
+  buyer_email VARCHAR(255) NOT NULL,
+  seller_email VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
-  seller_email TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create storage bucket for images
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('images', 'images', true)
-ON CONFLICT (id) DO NOTHING;
+-- Create storage bucket for listing images
+INSERT INTO storage.buckets (id, name, public) VALUES ('listing-images', 'listing-images', true);
 
--- Set up RLS (Row Level Security) policies
+-- Create policy for listing images storage
+CREATE POLICY "Anyone can upload listing images" ON storage.objects 
+FOR INSERT WITH CHECK (bucket_id = 'listing-images');
+
+CREATE POLICY "Anyone can view listing images" ON storage.objects 
+FOR SELECT USING (bucket_id = 'listing-images');
+
+-- Create indexes for better performance
+CREATE INDEX idx_listings_category ON listings(category);
+CREATE INDEX idx_listings_created_at ON listings(created_at DESC);
+CREATE INDEX idx_messages_listing_id ON messages(listing_id);
+
+-- Enable Row Level Security (RLS)
 ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access to listings
-CREATE POLICY "Public listings are viewable by everyone" ON listings
-  FOR SELECT USING (true);
+-- Create policies for listings (anyone can read, anyone can insert)
+CREATE POLICY "Anyone can view listings" ON listings FOR SELECT USING (true);
+CREATE POLICY "Anyone can create listings" ON listings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can update their own listings" ON listings FOR UPDATE USING (seller_email = current_setting('request.jwt.claims')::json->>'email');
 
--- Allow anyone to insert new listings
-CREATE POLICY "Anyone can insert listings" ON listings
-  FOR INSERT WITH CHECK (true);
+-- Create policies for messages (anyone can read and insert)
+CREATE POLICY "Anyone can view messages" ON messages FOR SELECT USING (true);
+CREATE POLICY "Anyone can create messages" ON messages FOR INSERT WITH CHECK (true);
 
--- Allow public read access to messages
-CREATE POLICY "Public messages are viewable by everyone" ON messages
-  FOR SELECT USING (true);
-
--- Allow anyone to insert new messages
-CREATE POLICY "Anyone can insert messages" ON messages
-  FOR INSERT WITH CHECK (true);
-
--- Storage policies for images
-CREATE POLICY "Anyone can upload images" ON storage.objects
-  FOR INSERT WITH CHECK (bucket_id = 'images');
-
-CREATE POLICY "Images are publicly accessible" ON storage.objects
-  FOR SELECT USING (bucket_id = 'images');
-
--- Function to update updated_at timestamp
+-- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = TIMEZONE('utc'::text, NOW());
-    RETURN NEW;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
 $$ language 'plpgsql';
 
--- Trigger to automatically update updated_at
-CREATE TRIGGER update_listings_updated_at 
-  BEFORE UPDATE ON listings 
-  FOR EACH ROW 
-  EXECUTE FUNCTION update_updated_at_column();
-
--- Function to create listings (workaround for schema cache issues)
-CREATE OR REPLACE FUNCTION create_listing_raw(
-  p_title TEXT,
-  p_price TEXT,
-  p_email TEXT,
-  p_description TEXT DEFAULT '',
-  p_category TEXT,
-  p_location TEXT DEFAULT 'Not specified',
-  p_image_url TEXT DEFAULT NULL
-)
-RETURNS JSON AS $$
-DECLARE
-  new_listing JSON;
-BEGIN
-  INSERT INTO listings (title, price, email, description, category, location, image_url)
-  VALUES (p_title, p_price, p_email, p_description, p_category, p_location, p_image_url)
-  RETURNING row_to_json(listings.*) INTO new_listing;
-  
-  RETURN new_listing;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Add some sample data (optional)
-INSERT INTO listings (title, description, price, email, category, location) VALUES
-  ('MacBook Pro 13"', 'Excellent condition, barely used. Comes with charger and original box.', '$1,200', 'seller@example.com', 'Electronics', 'Palo Alto, CA'),
-  ('Mountain Bike', 'Great condition bike, perfect for trails and commuting.', '$450', 'bikeseller@example.com', 'Sporting Goods', 'Mountain View, CA'),
-  ('iPhone 14', 'Like new, with all accessories and original packaging.', '$800', 'phoneseller@example.com', 'Electronics', 'San Francisco, CA'),
-  ('Dining Table Set', 'Beautiful wooden dining table with 4 chairs.', '$300', 'furniture@example.com', 'Home Goods', 'Palo Alto, CA'),
-  ('Guitar - Fender Stratocaster', 'American Standard Stratocaster in excellent condition.', '$1,500', 'musician@example.com', 'Musical Instruments', 'San Jose, CA');
+-- Create trigger to automatically update updated_at
+CREATE TRIGGER update_listings_updated_at BEFORE UPDATE ON listings
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
